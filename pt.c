@@ -1,7 +1,15 @@
 #include "os.h"
 
-void page table update(uint64 t pt, uint64 t vpn, uint64 t ppn)
+void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
-	
+    
+	if (ppn == NO_MAPPING)
+    {
+        pages[0]
+    }
+    else
+    {
+        pt[vpn] = ppn;
+    }
 }
 
