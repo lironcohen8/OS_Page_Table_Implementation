@@ -43,10 +43,20 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
     }
 }
 
-/*uint64_t page_table_query(uint64_t pt, uint64_t vpn)
+uint64_t page_table_query(uint64_t pt, uint64_t vpn)
 {
-    
-}*/
+    uint64_t* vpnParts = break_vpn_to_parts(vpn);
+    for (int i = 0; i < NUM_OF_LEVELS; i++)
+        {
+            uint64_t pte = pt[i][vpnParts[i]];
+            if (pte & 1 == 0) // reached invalid pte, mapping does not exist
+            {
+                return NO_MAPPING;
+            }
+            // if pte is valid, continue to the next level
+        }
+        return pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];// TODO: Check if that is what we need to return
+}
 
 uint64_t* break_vpn_to_parts(uint64_t vpn)
 {
