@@ -33,14 +33,13 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             uint64_t pte = pt[i][vpnParts[i]];
             if (pte & 1 == 0) // reached invalid pte, creating new mapping
             {
-                uint64_t ppn = alloc_page_frame();
+                uint64_t ppn = alloc_page_frame(); // TODO : need to understand how we continue and mapping only in the end
                 pt[i][vpnParts[i]] = (ppn ~0xFFF) | 1; // creating the mapping, nullifying the least 12 bits and validating the mapping
                 i--; // making sure the loop continues from the mapping we have just created
             }
             // if pte is valid, continue to the next level
         }
-        uint64_t lastVpnPart = pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];
-        pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]] = lastVpnPart & ~1; // mapping exists and should be invalid
+        // when we finished the loop, the desired mapping was created
     }
 }
 
@@ -59,6 +58,4 @@ uint64_t* break_vpn_to_parts(uint64_t vpn)
     uint64_t* result = { vpnPart1, vpnPart2, vpnPart3, vpnPart4, vpnPart5 };
     return result;
 }
-
-/*break_vpn_to_parts(180);*/
 
