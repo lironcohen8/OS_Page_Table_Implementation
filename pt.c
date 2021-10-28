@@ -34,8 +34,8 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             if (pte & 1 == 0) // reached invalid pte, creating new mapping
             {
                 uint64_t ppn = alloc_page_frame();
-                pt[i][vpnParts[i]] = pt[i][vpnParts[i] | 1; // validating the mapping
-
+                pt[i][vpnParts[i]] = (ppn ~0xFFF) | 1; // creating the mapping, nullifying the least 12 bits and validating the mapping
+                i--; // making sure the loop continues from the mapping we have just created
             }
             // if pte is valid, continue to the next level
         }
