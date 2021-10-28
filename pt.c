@@ -12,7 +12,6 @@ uint64_t** pt = { ptLevel1, ptLevel2, ptLevel3, ptLevel4, ptLevel5 };
 void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
     uint64_t* vpnParts = break_vpn_to_parts(vpn);
-    uint64_t = vpn & 1;
 	if (ppn == NO_MAPPING) // invalidating the mapping, if exists
     {
         for (int i = 0; i < NUM_OF_LEVELS; i++)
@@ -20,14 +19,28 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             uint64_t pte = pt[i][vpnParts[i]];
             if (pte & 1 == 0) // reached invalid pte, no need to invalidate
             {
-                break;
+                return;
             }
             // if pte is valid, continue to the next level
         }
+        uint64_t lastVpnPart = pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];
+        pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]] = lastVpnPart & ~1; // mapping exists and should be invalid
     }
     else // creating a new mapping, if needed
     {
-        pt[vpn] = ppn;
+        for (int i = 0; i < NUM_OF_LEVELS; i++)
+        {
+            uint64_t pte = pt[i][vpnParts[i]];
+            if (pte & 1 == 0) // reached invalid pte, creating new mapping
+            {
+                uint64_t ppn = alloc_page_frame();
+                pt[i][vpnParts[i]] = pt[i][vpnParts[i] | 1; // validating the mapping
+
+            }
+            // if pte is valid, continue to the next level
+        }
+        uint64_t lastVpnPart = pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];
+        pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]] = lastVpnPart & ~1; // mapping exists and should be invalid
     }
 }
 
