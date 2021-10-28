@@ -17,7 +17,12 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
     {
         for (int i = 0; i < NUM_OF_LEVELS; i++)
         {
-            uint64_t vpnParts[i] = 
+            uint64_t pte = pt[i][vpnParts[i]];
+            if (pte & 1 == 0) // reached invalid pte, no need to invalidate
+            {
+                break;
+            }
+            // if pte is valid, continue to the next level
         }
     }
     else // creating a new mapping, if needed
