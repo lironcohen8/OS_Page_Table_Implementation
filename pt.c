@@ -1,14 +1,13 @@
 #include <stdlib.h>
 #include "os.h"
-#include "os.c"
 
 int NUM_OF_LEVELS = 5, shift, i;
 uint64_t vpnPart, pte, newPpn, newVa, requiredPpn;
-uint64_t* currentVa;
+uint64_t* currentTableNode;
 
 void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
-    currentVa = phys_to_virt(pt << 12);
+    currentTableNode = phys_to_virt(pt << 12);
 
 	if (ppn == NO_MAPPING) // invalidating the mapping, if exists
     {
@@ -16,14 +15,14 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
         {
             shift = 36 - (9 * i); 
             vpnPart = (vpn >> shift) & 0x1FF; // masking to get relevant 9 bits
-            pte = currentVa[vpnPart];
+            pte = currentTableNode[vpnPart];
             if ((pte & 1) == 0) // reached invalid or not existing pte, no need to invalidate
             {
                 return;
             }
             // if pte is valid, continue to the next level
             // pte = pte >> 12; TODO: understand if needed - nullifying the 12 least significant bits
-            currentVa = phys_to_virt(pte << 12);
+            currentTableNode = phys_to_virt(pte << 12);
         }
         pte = pte & (~1); // mapping exists and should be invalid
     }
@@ -33,15 +32,17 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
         {
             shift = 36 - (9 * i); 
             vpnPart = (vpn >> shift) & 0x1FF; // masking to get relevant 9 bits
-            pte = currentVa[vpnPart];
+            pte = currentTableNode[vpnPart];
             // TODO what if mapping doesn't exist, creating new mapping
             if ((pte & 1) == 0) // reached invalid pte, validate it and write the new ppn
             {
                 newPpn = alloc_page_frame(); // TODO : need to understand how we continue and mapping only in the end
-                currentVa[vpnPart] = (newPpn << 12) | 1; // nullifying the least 12 bits and validating the mapping
-                i--; // making sure the loop continues from the mapping we have just created
+                currentTableNode[vpnPart] = (newPpn << 12) | 1; // nullifying the least 12 bits and validating the mapping
             }
-            // if pte is valid, continue to the next level
+            else // if pte is valid, continue to the next level
+            {
+                currentTableNode = phys_to_virt(pte << 12);
+            }
         }
         // when we finished the loop, the desired mapping was created
     }
@@ -49,19 +50,19 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 
 uint64_t page_table_query(uint64_t pt, uint64_t vpn)
 {
-    currentVa = phys_to_virt(pt << 12);
+    currentTableNode = phys_to_virt(pt << 12);
 
     for (int i = 0; i < NUM_OF_LEVELS; i++)
     {
         shift = 36 - (9 * i); 
         vpnPart = (vpn >> shift) & 0x1FF; // masking to get relevant 9 bits
-        pte = pages[*currentVa+vpnPart];
+        pte = currentTableNode[vpnPart];
         if ((pte & 1) == 0) // reached invalid or not existing pte, no need to invalidate
         {
             return NO_MAPPING;
         }
         // if pte is valid, continue to the next level
-        currentVa = phys_to_virt(pte << 12);
+        currentTableNode = phys_to_virt(pte << 12);
     }
 
     return pte << 12; // TODO: Check if that is what we need to return
