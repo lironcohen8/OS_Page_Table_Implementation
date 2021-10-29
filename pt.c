@@ -33,8 +33,8 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             shift = 36 - (9 * i); 
             vpnPart = (vpn >> shift) & 0x1FF; // masking to get relevant 9 bits
             pte = currentTableNode[vpnPart];
-            // TODO what if mapping doesn't exist, creating new mapping
-            if ((pte & 1) == 0) // reached invalid pte, validate it and write the new ppn
+            // TODO what if mapping doesn't exist? creating new mapping
+            if ((pte & 1) == 0) // reached invalid pte, writing the new ppn and validating the pte
             {
                 newPpn = alloc_page_frame(); // TODO : need to understand how we continue and mapping only in the end
                 currentTableNode[vpnPart] = (newPpn << 12) | 1; // nullifying the least 12 bits and validating the mapping
@@ -66,14 +66,5 @@ uint64_t page_table_query(uint64_t pt, uint64_t vpn)
     }
 
     return pte << 12; // TODO: Check if that is what we need to return
-}
-
-void break_vpn_to_parts(uint64_t* vpnPartsAddr, uint64_t vpn)
-{
-    vpnPartsAddr[0] = 0x1FF000000000000 & vpn; // bits 48 to 56
-    vpnPartsAddr[1] = 0xFF8000000000 & vpn; // bits 39 to 47
-    vpnPartsAddr[2] = 0x7FC0000000 & vpn; // bits 30 to 38
-    vpnPartsAddr[3] = 0x3FE00000 & vpn; // bits 21 to 29
-    vpnPartsAddr[4] = 0x1FF000 & vpn; // bits 12 to 20
 }
 
