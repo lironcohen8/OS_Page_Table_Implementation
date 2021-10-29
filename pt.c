@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "os.h"
+#include "os.c"
 
 int NUM_OF_LEVELS = 5, shift, i;
 uint64_t vpnPart, pte, newPpn, newVa, requiredPpn;
@@ -16,7 +17,7 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             shift = 36 - (9 * i); 
             vpnPart = (vpn >> shift) & 0x1FF; // masking to get relevant 9 bits
             pte = currentVa[vpnPart];
-            if (pte == NULL || (pte & 1) == 0) // reached invalid or not existing pte, no need to invalidate
+            if ((pte & 1) == 0) // reached invalid or not existing pte, no need to invalidate
             {
                 return;
             }
@@ -33,10 +34,7 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             shift = 36 - (9 * i); 
             vpnPart = (vpn >> shift) & 0x1FF; // masking to get relevant 9 bits
             pte = currentVa[vpnPart];
-            if (pte == NULL) // mapping doesn't exist, creating new mapping
-            {
-                
-            }
+            // TODO what if mapping doesn't exist, creating new mapping
             if ((pte & 1) == 0) // reached invalid pte, validate it and write the new ppn
             {
                 newPpn = alloc_page_frame(); // TODO : need to understand how we continue and mapping only in the end
@@ -51,18 +49,21 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 
 uint64_t page_table_query(uint64_t pt, uint64_t vpn)
 {
+    currentVa = phys_to_virt(pt << 12);
+
     for (int i = 0; i < NUM_OF_LEVELS; i++)
     {
         shift = 36 - (9 * i); 
         vpnPart = (vpn >> shift) & 0x1FF; // masking to get relevant 9 bits
-        pte = currentVa[vpnPart];
-        if (pte == NULL || (pte & 1) == 0) // reached invalid or not existing pte, no need to invalidate
+        pte = pages[*currentVa+vpnPart];
+        if ((pte & 1) == 0) // reached invalid or not existing pte, no need to invalidate
         {
             return NO_MAPPING;
         }
         // if pte is valid, continue to the next level
         currentVa = phys_to_virt(pte << 12);
     }
+
     return pte << 12; // TODO: Check if that is what we need to return
 }
 
