@@ -14,6 +14,7 @@ for (int i = 0; i < NUM_OF_LEVELS; i++) // creating the page table with 5 levels
 
 void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
+    uint64_t baseVa = phys_to_virt(pt << 12);
     break_vpn_to_parts(vpnParts, vpn);
 	if (ppn == NO_MAPPING) // invalidating the mapping, if exists
     {
@@ -37,7 +38,8 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             if ((pte & 1) == 0) // reached invalid pte, creating new mapping
             {
                 uint64_t ppn = alloc_page_frame(); // TODO : need to understand how we continue and mapping only in the end
-                pageTable[i][vpnParts[i]] = (ppn & (~0xFFF)) | 1; // creating the mapping, nullifying the least 12 bits and validating the mapping
+                uint64_t va = phys_to_virt(ppn << 12);
+                pageTable[i][vpnParts[i]] = (va & (~0xFFF)) | 1; // creating the mapping, nullifying the least 12 bits and validating the mapping
                 i--; // making sure the loop continues from the mapping we have just created
             }
             // if pte is valid, continue to the next level
