@@ -3,14 +3,8 @@
 
 int NUM_OF_LEVELS = 5;
 
-uint64_t* pageTable[5];
 uint64_t* vpnParts = (uint64_t*) calloc(5, sizeof(uint64_t));
 void break_vpn_to_parts(uint64_t* vpnPartsAddr, uint64_t vpn);
-
-for (int i = 0; i < NUM_OF_LEVELS; i++) // creating the page table with 5 levels
-{
-    pageTable[i] = (uint64_t*) calloc(512, sizeof(uint64_t));
-}
 
 void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
@@ -39,7 +33,7 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             if ((pte & 1) == 0) // reached invalid pte, creating new mapping
             {
                 uint64_t ppn = alloc_page_frame(); // TODO : need to understand how we continue and mapping only in the end
-                uint64_t va = phys_to_virt(ppn << 12);
+                uint64_t* va = phys_to_virt(ppn << 12);
                 pageTable[i][vpnParts[i]] = (va & (~0xFFF)) | 1; // creating the mapping, nullifying the least 12 bits and validating the mapping
                 i--; // making sure the loop continues from the mapping we have just created
             }
