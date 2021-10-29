@@ -1,40 +1,44 @@
+#include <stdlib.h>
 #include "os.h"
 
 int NUM_OF_LEVELS = 5;
-uint64_t* ptLevel1 = uint64_t[512];
-uint64_t* ptLevel2 = uint64_t[512];
-uint64_t* ptLevel3 = uint64_t[512];
-uint64_t* ptLevel4 = uint64_t[512];
-uint64_t* ptLevel5 = uint64_t[512];
 
-uint64_t** pt = { ptLevel1, ptLevel2, ptLevel3, ptLevel4, ptLevel5 };
+uint64_t* pageTable[5];
+uint64_t vpnParts[5];
+void break_vpn_to_parts(uint64_t* vpnPartsAddr, uint64_t vpn);
+
+for (int i = 0; i < NUM_OF_LEVELS; i++) // creating the page table with 5 levels
+{
+    pageTable[i] = (uint64_t*) calloc(512, sizeof(uint64_t));
+}
 
 void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
-    uint64_t* vpnParts = break_vpn_to_parts(vpn);
+    vpnParts = (uint64_t*) calloc(5, sizeof(uint64_t));
+    break_vpn_to_parts(&vpnParts, vpn);
 	if (ppn == NO_MAPPING) // invalidating the mapping, if exists
     {
         for (int i = 0; i < NUM_OF_LEVELS; i++)
         {
-            uint64_t pte = pt[i][vpnParts[i]];
-            if (pte & 1 == 0) // reached invalid pte, no need to invalidate
+            uint64_t pte = pageTable[i][vpnParts[i]];
+            if ((pte & 1) == 0) // reached invalid pte, no need to invalidate
             {
                 return;
             }
             // if pte is valid, continue to the next level
         }
-        uint64_t lastVpnPart = pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];
-        pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]] = lastVpnPart & ~1; // mapping exists and should be invalid
+        uint64_t lastVpnPart = pageTable[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];
+        pageTable[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]] = lastVpnPart & (~1); // mapping exists and should be invalid
     }
     else // creating a new mapping, if needed
     {
         for (int i = 0; i < NUM_OF_LEVELS; i++)
         {
-            uint64_t pte = pt[i][vpnParts[i]];
-            if (pte & 1 == 0) // reached invalid pte, creating new mapping
+            uint64_t pte = pageTable[i][vpnParts[i]];
+            if ((pte & 1) == 0) // reached invalid pte, creating new mapping
             {
                 uint64_t ppn = alloc_page_frame(); // TODO : need to understand how we continue and mapping only in the end
-                pt[i][vpnParts[i]] = (ppn ~0xFFF) | 1; // creating the mapping, nullifying the least 12 bits and validating the mapping
+                pageTable[i][vpnParts[i]] = (ppn & (~0xFFF)) | 1; // creating the mapping, nullifying the least 12 bits and validating the mapping
                 i--; // making sure the loop continues from the mapping we have just created
             }
             // if pte is valid, continue to the next level
@@ -45,27 +49,27 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 
 uint64_t page_table_query(uint64_t pt, uint64_t vpn)
 {
-    uint64_t* vpnParts = break_vpn_to_parts(vpn);
+    vpnParts = (uint64_t*) calloc(5, sizeof(uint64_t));
+    break_vpn_to_parts(&vpnParts, vpn);
     for (int i = 0; i < NUM_OF_LEVELS; i++)
+    {
+        uint64_t pte = pageTable[i][vpnParts[i]];
+        if ((pte & 1) == 0) // reached invalid pte, mapping does not exist
         {
-            uint64_t pte = pt[i][vpnParts[i]];
-            if (pte & 1 == 0) // reached invalid pte, mapping does not exist
-            {
-                return NO_MAPPING;
-            }
-            // if pte is valid, continue to the next level
+            return NO_MAPPING;
         }
-        return pt[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];// TODO: Check if that is what we need to return
+        // if pte is valid, continue to the next level
+    }
+    uint64_t ppn = pageTable[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];
+    return ppn; // TODO: Check if that is what we need to return
 }
 
-uint64_t* break_vpn_to_parts(uint64_t vpn)
+void break_vpn_to_parts(uint64_t* vpnPartsAddr, uint64_t vpn)
 {
-    uint64_t vpnPart1 = 0x1FF000000000000 & vpn; // bits 48 to 56
-    uint64_t vpnPart2 = 0xFF8000000000 & vpn; // bits 39 to 47
-    uint64_t vpnPart3 = 0x7FC0000000 & vpn; // bits 30 to 38
-    uint64_t vpnPart4 = 0x3FE00000 & vpn; // bits 21 to 29
-    uint64_t vpnPart5 = 0x1FF000 & vpn; // bits 12 to 20
-    uint64_t* result = { vpnPart1, vpnPart2, vpnPart3, vpnPart4, vpnPart5 };
-    return result;
+    vpnPartsAddr[0] = 0x1FF000000000000 & vpn; // bits 48 to 56
+    vpnPartsAddr[1] = 0xFF8000000000 & vpn; // bits 39 to 47
+    vpnPartsAddr[2] = 0x7FC0000000 & vpn; // bits 30 to 38
+    vpnPartsAddr[3] = 0x3FE00000 & vpn; // bits 21 to 29
+    vpnPartsAddr[4] = 0x1FF000 & vpn; // bits 12 to 20
 }
 
