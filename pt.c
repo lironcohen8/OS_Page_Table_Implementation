@@ -4,7 +4,7 @@
 int NUM_OF_LEVELS = 5;
 
 uint64_t* pageTable[5];
-uint64_t vpnParts[5];
+uint64_t* vpnParts = (uint64_t*) calloc(5, sizeof(uint64_t));
 void break_vpn_to_parts(uint64_t* vpnPartsAddr, uint64_t vpn);
 
 for (int i = 0; i < NUM_OF_LEVELS; i++) // creating the page table with 5 levels
@@ -14,8 +14,7 @@ for (int i = 0; i < NUM_OF_LEVELS; i++) // creating the page table with 5 levels
 
 void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
-    vpnParts = (uint64_t*) calloc(5, sizeof(uint64_t));
-    break_vpn_to_parts(&vpnParts, vpn);
+    break_vpn_to_parts(vpnParts, vpn);
 	if (ppn == NO_MAPPING) // invalidating the mapping, if exists
     {
         for (int i = 0; i < NUM_OF_LEVELS; i++)
@@ -49,8 +48,7 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 
 uint64_t page_table_query(uint64_t pt, uint64_t vpn)
 {
-    vpnParts = (uint64_t*) calloc(5, sizeof(uint64_t));
-    break_vpn_to_parts(&vpnParts, vpn);
+    break_vpn_to_parts(vpnParts, vpn);
     for (int i = 0; i < NUM_OF_LEVELS; i++)
     {
         uint64_t pte = pageTable[i][vpnParts[i]];
