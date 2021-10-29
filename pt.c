@@ -14,18 +14,19 @@ for (int i = 0; i < NUM_OF_LEVELS; i++) // creating the page table with 5 levels
 
 void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
 {
-    uint64_t baseVa = phys_to_virt(pt << 12);
+    uint64_t* currentVa = phys_to_virt(pt << 12);
     break_vpn_to_parts(vpnParts, vpn);
 	if (ppn == NO_MAPPING) // invalidating the mapping, if exists
     {
         for (int i = 0; i < NUM_OF_LEVELS; i++)
         {
-            uint64_t pte = pageTable[i][vpnParts[i]];
+            uint64_t pte = currentVa[vpnParts[i]];
             if ((pte & 1) == 0) // reached invalid pte, no need to invalidate
             {
                 return;
             }
             // if pte is valid, continue to the next level
+            currentVa = 
         }
         uint64_t lastVpnPart = pageTable[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]];
         pageTable[NUM_OF_LEVELS - 1][vpnParts[NUM_OF_LEVELS - 1]] = lastVpnPart & (~1); // mapping exists and should be invalid
