@@ -22,7 +22,11 @@ void page_table_update(uint64_t pt, uint64_t vpn, uint64_t ppn)
             // if pte is valid, continue to the next level, only invalidating the last mapping
             currentTableNode = phys_to_virt(currentTableNode[vpnPart]);
         }
-        currentTableNode[vpnPart] &= (~1); // mapping exists and should be invalid
+        vpnPart = vpn & 0x1FF; // masking to get relevant 9 bits
+        if ((currentTableNode[vpnPart] & 1) == 1) // last mapping is valid
+        {
+            currentTableNode[vpnPart] &= (~1); // invalidate the mapping
+        }
     }
     else // creating a new mapping, if needed
     {
@@ -61,6 +65,10 @@ uint64_t page_table_query(uint64_t pt, uint64_t vpn)
         currentTableNode = phys_to_virt(currentTableNode[vpnPart]);
     }
     vpnPart = vpn & 0x1FF; // masking to get relevant 9 bits
+    if ((currentTableNode[vpnPart] & 1) == 0) // reached invalid or not existing pte, no need to invalidate
+    {
+        return NO_MAPPING;
+    }
     return currentTableNode[vpnPart] >> 12; // TODO: Check if that is what we need to return
 }
 
